@@ -12,6 +12,7 @@
 
 #define PlayerW 16
 #define PlayerH 16
+#define MaxSpeed 200
 
 #define Platforms 16
 #define PlatformW 64
@@ -245,13 +246,15 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
     }
 }
 
-void DrawWindow(HWND hwnd, RECT rc) //Draws buffer bitmap to window
+void DrawWindow(HWND hwnd, RECT rc, QPCvars *Timervars) //Draws buffer bitmap to window
 {
-    GetClientRect(hwnd, &rc);
-    int WindowW = rc.right - rc.left;
-    int WindowH = rc.bottom - rc.top;
-
-    StretchDIBits(DeviceContext, rc.left, rc.top, WindowW, WindowH, 0, 0, BitmapW, BitmapH, BitmapMemory, &BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+    if (Timer(Timervars))
+    {
+        GetClientRect(hwnd, &rc);
+        int WindowW = rc.right - rc.left;
+        int WindowH = rc.bottom - rc.top;
+        StretchDIBits(DeviceContext, rc.left, rc.top, WindowW, WindowH, 0, 0, BitmapW, BitmapH, BitmapMemory, &BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+    }
 }
 
 int DetectGroundContact(POINT ObjectLocation, POINT TargetLocation[])
@@ -277,7 +280,7 @@ void ReadKeyboard(QPCvars *Timervars, POINT *ObjectLocation, velocity *ObjectV, 
         if (GetAsyncKeyState('D'))
         {
             *Direction = 1;
-            if (Contact)
+            if (Contact && ObjectV->vx < MaxSpeed)
             {
                 ObjectV->vx += 10;
             }
@@ -285,7 +288,7 @@ void ReadKeyboard(QPCvars *Timervars, POINT *ObjectLocation, velocity *ObjectV, 
         if (GetAsyncKeyState('A'))
         {
             *Direction = -1;
-            if (Contact)
+            if (Contact && ObjectV->vx > -MaxSpeed)
             {
                 ObjectV->vx -= 10;
             }
@@ -429,13 +432,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             sprintf(WindowInfo, "%ldx%ld", (rc.right - rc.left), (rc.bottom - rc.top));
             SetWindowTextA(hwnd, WindowInfo);
         }
-        case WM_PAINT:
-        {
-            BeginPaint(hwnd, &Paint);
-            DrawWindow(hwnd, rc);
-            EndPaint(hwnd, &Paint);
-            break;
-        }
         default:
         {
             return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -460,6 +456,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     QPCvars PlayerTx = {0};
     QPCvars PlayerTy = {0};
     QPCvars PlatformT[16] = {{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
+    QPCvars WindowT = {0};
     velocity PlayerV = {0};
     POINT PlayerLocation = {0, 40};
     POINT PlatformLocation[16] = {{10, 70}, {500, 100}, {100, 130}, {70, 160}, {400, 190}, {160, 220}, {60, 250}, {200, 280}, {100, 310}, {0, 340}, {160, 370}, {450, 400}, {0, 430}, {620, 460}, {0, 490}, {100, 520}};
@@ -467,6 +464,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     AccelerationT.Interval = 8000; //microseconds
     GravityT.Interval = 8000; //microseconds
     FrictionT.Interval = 5; //microseconds
+    WindowT.Interval = 8300;  //microseconds
 
     PlatformT[0].Interval = 22000;
     PlatformT[1].Interval = 20000;
@@ -516,6 +514,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     GravityT.Frequency = AccelerationT.Frequency;
     PlayerTx.Frequency = AccelerationT.Frequency;
     PlayerTy.Frequency = AccelerationT.Frequency;
+    WindowT.Frequency = AccelerationT.Frequency;
     for (int z = 0; z < Platforms; z++)
     {
         PlatformT[z].Frequency = AccelerationT.Frequency;
@@ -546,7 +545,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         UpdateObjectLocation(&PlayerLocation, &PlayerV, &PlayerTx, &PlayerTy);
         LimitArea(&PlayerLocation, &PlayerV);
         DrawPlayer(&PlayerLocation, &PlayerDirection);
-        DrawWindow(hwnd, rc);
+        DrawWindow(hwnd, rc, &WindowT);
     }
     return 0;
 }
