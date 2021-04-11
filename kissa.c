@@ -6,17 +6,17 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define BytesPerPixel 4
-#define BitmapW 1024
-#define BitmapH 576
+#define BYTESPERPIXEL 4
+#define BITMAPW 1024
+#define BITMAPH 576
 
-#define PlayerW 16
-#define PlayerH 16
-#define MaxSpeed 200
+#define PLAYERW 16
+#define PLAYERH 16
+#define MAXSPEED 200
 
-#define Platforms 16
-#define PlatformW 64
-#define PlatformH 12
+#define PLATFORMS 16
+#define PLATFORMW 64
+#define PLATFORMH 12
 
 typedef struct velocity //Variables for handling object velocity
 {
@@ -71,27 +71,27 @@ void CreateBufferBitmap() //Creates buffer bitmap
     }
 
     BitmapInfo.bmiHeader.biSize = sizeof(BitmapInfo.bmiHeader);
-    BitmapInfo.bmiHeader.biWidth = BitmapW;
-    BitmapInfo.bmiHeader.biHeight = BitmapH;
+    BitmapInfo.bmiHeader.biWidth = BITMAPW;
+    BitmapInfo.bmiHeader.biHeight = BITMAPH;
     BitmapInfo.bmiHeader.biPlanes = 1;
     BitmapInfo.bmiHeader.biBitCount = 32;
     BitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    int BitmapMemorySize = BitmapW * BitmapH * BytesPerPixel;
+    int BitmapMemorySize = BITMAPW * BITMAPH * BYTESPERPIXEL;
     BitmapMemory = VirtualAlloc(NULL, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 }
 
 void DrawBackground()
 {
-    int BitmapArea = BitmapW * BitmapH;
+    int BitmapArea = BITMAPW * BITMAPH;
     int Red = 125;
     int Green = 200;
     int Blue = 255;
 
     uint32_t *Pixel = (uint32_t *)BitmapMemory;
-    for (int z = 0; z < BitmapH / 8; z++)
+    for (int z = 0; z < BITMAPH / 8; z++)
     {
-        for (int z = 0; z < BitmapW * 8; z++)
+        for (int z = 0; z < BITMAPW * 8; z++)
         {
         *Pixel++ = (Red << 16 | Green << 8 | Blue);
         }
@@ -108,7 +108,7 @@ void DrawBackground()
 
     for (int z = 0; z < 32; z++)
     {
-        for (int z = 0; z < BitmapW; z++)
+        for (int z = 0; z < BITMAPW; z++)
         {
             *Pixel++ = (Red << 16 | Green << 8 | Blue);
         }
@@ -119,19 +119,19 @@ void DrawBackground()
     Red = 0;
     Green = 100;
     Blue = 25;
-    for (int z = 0; z < BitmapW * 8; z++)
+    for (int z = 0; z < BITMAPW * 8; z++)
     {
         *Pixel++ = (Red << 16 | Green << 8 | Blue);
     }
 }
 
-void MovePlatforms(POINT *PlatformLocation, QPCvars *Timervars, int *Direction)
+void MovePLATFORMS(POINT *PlatformLocation, QPCvars *Timervars, int *Direction)
 {
     if (PlatformLocation->x < 0 && *Direction == -1)
     {
         *Direction = 1;
     }
-    if (PlatformLocation->x > (BitmapW - PlatformW) && *Direction == 1)
+    if (PlatformLocation->x > (BITMAPW - PLATFORMW) && *Direction == 1)
     {
         *Direction = -1;
     }
@@ -141,24 +141,24 @@ void MovePlatforms(POINT *PlatformLocation, QPCvars *Timervars, int *Direction)
     }
 }
 
-void DrawPlatforms(POINT *PlatformLocation)
+void DrawPLATFORMS(POINT *PlatformLocation)
 {
     int Red = 100;
     int Green = 50;
     int Blue = 0;
 
     uint32_t *PlatformPixel = (uint32_t *)BitmapMemory;
-    PlatformPixel += PlatformLocation->x + PlatformLocation->y * BitmapW;
+    PlatformPixel += PlatformLocation->x + PlatformLocation->y * BITMAPW;
 
-    for (int z = 0; z < PlatformH - 2; z++)
+    for (int z = 0; z < PLATFORMH - 2; z++)
     {
-        for (int z = 0; z < PlatformW; z++)
+        for (int z = 0; z < PLATFORMW; z++)
         {
             *PlatformPixel++ = (Red << 16 | Green << 8 | Blue);
         }
         Red++;
         Green++;
-        PlatformPixel += BitmapW - PlatformW;
+        PlatformPixel += BITMAPW - PLATFORMW;
     }
 
     Red = 0;
@@ -166,17 +166,17 @@ void DrawPlatforms(POINT *PlatformLocation)
     Blue = 25;
     for (int z = 0; z < 2; z++)
     {
-        for (int z = 0; z < PlatformW; z++)
+        for (int z = 0; z < PLATFORMW; z++)
         {
             *PlatformPixel++ = (Red << 16 | Green << 8 | Blue);
         }
-        PlatformPixel += BitmapW - PlatformW;
+        PlatformPixel += BITMAPW - PLATFORMW;
     }
 }
 
 void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
 {
-    int PlayerArea = PlayerW * PlayerH;
+    int PlayerArea = PLAYERW * PLAYERH;
     int SpriteRow;
     int SpriteColumn;
     int RowBitmap;
@@ -189,13 +189,13 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
     int EyeBlue = 7;
 
     uint32_t *FurPixel = (uint32_t *)BitmapMemory;
-    FurPixel += PlayerLocation->x + PlayerLocation->y * BitmapW;
+    FurPixel += PlayerLocation->x + PlayerLocation->y * BITMAPW;
 
     if (*Direction == 1)
     {
-        for (SpriteRow = 0; SpriteRow < PlayerH; SpriteRow++)
+        for (SpriteRow = 0; SpriteRow < PLAYERH; SpriteRow++)
         {
-            for (SpriteColumn = 0; SpriteColumn < PlayerW; SpriteColumn++)
+            for (SpriteColumn = 0; SpriteColumn < PLAYERW; SpriteColumn++)
             {
                 if (0x8000 & (SpriteBitmap[SpriteRow] << SpriteColumn))
                 {
@@ -206,13 +206,13 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
                     FurPixel++;
                 }
             }
-            FurPixel += BitmapW - PlayerW;
+            FurPixel += BITMAPW - PLAYERW;
         }
 
         uint32_t *EyePixel = (uint32_t *)BitmapMemory;
         EyePixel += PlayerLocation->x;
-        EyePixel += PlayerLocation->y * BitmapW;
-        EyePixel += BitmapW * 12 + 12;
+        EyePixel += PlayerLocation->y * BITMAPW;
+        EyePixel += BITMAPW * 12 + 12;
         *EyePixel++ = (EyeRed << 16 | EyeGreen << 8 | EyeBlue);
         EyePixel += 2;
         *EyePixel++ = (EyeRed << 16 | EyeGreen << 8 | EyeBlue);
@@ -220,11 +220,11 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
 
     if (*Direction == -1)
     {
-        for (SpriteRow = 0; SpriteRow < PlayerH; SpriteRow++)
+        for (SpriteRow = 0; SpriteRow < PLAYERH; SpriteRow++)
         {
-            for (SpriteColumn = 0; SpriteColumn < PlayerW; SpriteColumn++)
+            for (SpriteColumn = 0; SpriteColumn < PLAYERW; SpriteColumn++)
             {
-                if (0x8000 & SpriteBitmap[SpriteRow] << ((PlayerW - 1) - SpriteColumn))
+                if (0x8000 & SpriteBitmap[SpriteRow] << ((PLAYERW - 1) - SpriteColumn))
                 {
                     *FurPixel++ = (FurRed << 16 | FurGreen << 8 | FurBlue);
                 }
@@ -233,13 +233,13 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
                     FurPixel++;
                 }
             }
-            FurPixel += BitmapW-PlayerW;
+            FurPixel += BITMAPW-PLAYERW;
         }
 
         uint32_t *EyePixel = (uint32_t *)BitmapMemory;
         EyePixel += PlayerLocation->x;
-        EyePixel += PlayerLocation->y * BitmapW;
-        EyePixel += BitmapW * 12;
+        EyePixel += PlayerLocation->y * BITMAPW;
+        EyePixel += BITMAPW * 12;
         *EyePixel++ = (EyeRed << 16 | EyeGreen << 8 | EyeBlue);
         EyePixel += 2;
         *EyePixel++ = (EyeRed << 16 | EyeGreen << 8 | EyeBlue);
@@ -253,15 +253,15 @@ void DrawWindow(HWND hwnd, RECT rc, QPCvars *Timervars) //Draws buffer bitmap to
         GetClientRect(hwnd, &rc);
         int WindowW = rc.right - rc.left;
         int WindowH = rc.bottom - rc.top;
-        StretchDIBits(DeviceContext, rc.left, rc.top, WindowW, WindowH, 0, 0, BitmapW, BitmapH, BitmapMemory, &BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+        StretchDIBits(DeviceContext, rc.left, rc.top, WindowW, WindowH, 0, 0, BITMAPW, BITMAPH, BitmapMemory, &BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
     }
 }
 
 int DetectGroundContact(POINT ObjectLocation, POINT TargetLocation[])
 {
-    for (int i = 0; i < Platforms; i++)
+    for (int i = 0; i < PLATFORMS; i++)
     {
-        if (ObjectLocation.y == (TargetLocation[i].y + PlatformH) && ObjectLocation.x > (TargetLocation[i].x - PlayerW) && ObjectLocation.x < (TargetLocation[i].x + PlatformW))
+        if (ObjectLocation.y == (TargetLocation[i].y + PLATFORMH) && ObjectLocation.x > (TargetLocation[i].x - PLAYERW) && ObjectLocation.x < (TargetLocation[i].x + PLATFORMW))
         {
             return 1;
         }
@@ -280,7 +280,7 @@ void ReadKeyboard(QPCvars *Timervars, POINT *ObjectLocation, velocity *ObjectV, 
         if (GetAsyncKeyState('D'))
         {
             *Direction = 1;
-            if (Contact && ObjectV->vx < MaxSpeed)
+            if (Contact && ObjectV->vx < MAXSPEED)
             {
                 ObjectV->vx += 10;
             }
@@ -288,7 +288,7 @@ void ReadKeyboard(QPCvars *Timervars, POINT *ObjectLocation, velocity *ObjectV, 
         if (GetAsyncKeyState('A'))
         {
             *Direction = -1;
-            if (Contact && ObjectV->vx > -MaxSpeed)
+            if (Contact && ObjectV->vx > -MAXSPEED)
             {
                 ObjectV->vx -= 10;
             }
@@ -392,7 +392,7 @@ void LimitArea(POINT *ObjectLocation, velocity *ObjectV)
         ObjectLocation->x++;
         ObjectV->vx = 0;
     }
-    if (ObjectLocation->x > (BitmapW - PlayerW))
+    if (ObjectLocation->x > (BITMAPW - PLAYERW))
     {
         ObjectLocation->x--;
         ObjectV->vx = 0;
@@ -401,7 +401,7 @@ void LimitArea(POINT *ObjectLocation, velocity *ObjectV)
     {
         ObjectV->vy = 0;
     }
-    if (ObjectLocation->y > (BitmapH - PlayerH))
+    if (ObjectLocation->y > (BITMAPH - PLAYERH))
     {
         ObjectLocation->y--;
         ObjectV->vy = 0;
@@ -515,7 +515,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     PlayerTx.Frequency = AccelerationT.Frequency;
     PlayerTy.Frequency = AccelerationT.Frequency;
     WindowT.Frequency = AccelerationT.Frequency;
-    for (int z = 0; z < Platforms; z++)
+    for (int z = 0; z < PLATFORMS; z++)
     {
         PlatformT[z].Frequency = AccelerationT.Frequency;
     }
@@ -533,10 +533,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         }
 
         DrawBackground();
-        for (int i = 0; i < Platforms; i++)
+        for (int i = 0; i < PLATFORMS; i++)
         {
-            MovePlatforms(&PlatformLocation[i], &PlatformT[i], &PlatformDirection[i]);
-            DrawPlatforms(&PlatformLocation[i]);
+            MovePLATFORMS(&PlatformLocation[i], &PlatformT[i], &PlatformDirection[i]);
+            DrawPLATFORMS(&PlatformLocation[i]);
         }
         PawContact = DetectGroundContact(PlayerLocation, PlatformLocation);
         Gravity(&GravityT, &PlayerLocation, &PlayerV, PawContact);
