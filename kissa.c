@@ -47,11 +47,10 @@ int Timer(QPCvars *Timervars)
         QueryPerformanceCounter(&Timervars->StartCount);
         Timervars->State++;
     }
-    if (Timervars->State)
-    {
-        QueryPerformanceCounter(&Timervars->EndCount);
-        Timervars->ElapsedCount.QuadPart = (Timervars->EndCount.QuadPart - Timervars->StartCount.QuadPart) * 1000000;
-    }
+
+    QueryPerformanceCounter(&Timervars->EndCount);
+    Timervars->ElapsedCount.QuadPart = (Timervars->EndCount.QuadPart - Timervars->StartCount.QuadPart) * 1000000;
+
     if (Timervars->ElapsedCount.QuadPart > Timervars->Interval * Timervars->Frequency.QuadPart)
     {
         Timervars->State--;
