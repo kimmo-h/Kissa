@@ -37,7 +37,6 @@ typedef struct QPCvars //Variables for QueryPerformanceCounter
 } QPCvars;
 
 HDC DeviceContext;
-static BITMAPINFO BitmapInfo = {0};
 static void *BitmapMemory;
 
 int Timer(QPCvars *Timervars)
@@ -62,19 +61,19 @@ int Timer(QPCvars *Timervars)
     }
 }
 
-void CreateBufferBitmap() //Creates buffer bitmap
+void CreateBufferBitmap(BITMAPINFO *BitmapInfo) //Creates buffer bitmap
 {
     if (BitmapMemory)
     {
         VirtualFree(BitmapMemory, 0, MEM_RELEASE);
     }
 
-    BitmapInfo.bmiHeader.biSize = sizeof(BitmapInfo.bmiHeader);
-    BitmapInfo.bmiHeader.biWidth = BITMAPW;
-    BitmapInfo.bmiHeader.biHeight = BITMAPH;
-    BitmapInfo.bmiHeader.biPlanes = 1;
-    BitmapInfo.bmiHeader.biBitCount = 32;
-    BitmapInfo.bmiHeader.biCompression = BI_RGB;
+    BitmapInfo->bmiHeader.biSize = sizeof(BitmapInfo->bmiHeader);
+    BitmapInfo->bmiHeader.biWidth = BITMAPW;
+    BitmapInfo->bmiHeader.biHeight = BITMAPH;
+    BitmapInfo->bmiHeader.biPlanes = 1;
+    BitmapInfo->bmiHeader.biBitCount = 32;
+    BitmapInfo->bmiHeader.biCompression = BI_RGB;
 
     int BitmapMemorySize = BITMAPW * BITMAPH * BYTESPERPIXEL;
     BitmapMemory = VirtualAlloc(NULL, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
@@ -245,14 +244,14 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
     }
 }
 
-void DrawWindow(HWND hwnd, RECT rc, QPCvars *Timervars) //Draws buffer bitmap to window
+void DrawWindow(HWND hwnd, RECT rc, BITMAPINFO *BitmapInfo, QPCvars *Timervars) //Draws buffer bitmap to window
 {
     if (Timer(Timervars))
     {
         GetClientRect(hwnd, &rc);
         int WindowW = rc.right - rc.left;
         int WindowH = rc.bottom - rc.top;
-        StretchDIBits(DeviceContext, rc.left, rc.top, WindowW, WindowH, 0, 0, BITMAPW, BITMAPH, BitmapMemory, &BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+        StretchDIBits(DeviceContext, rc.left, rc.top, WindowW, WindowH, 0, 0, BITMAPW, BITMAPH, BitmapMemory, BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
     }
 }
 
@@ -449,6 +448,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     char WindowInfo[64];
     WNDCLASS wc = {0};
     MSG msg = {0};
+    BITMAPINFO BitmapInfo = {0};
     QPCvars AccelerationT = {0};
     QPCvars GravityT = {0};
     QPCvars FrictionT = {0};
@@ -461,10 +461,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     POINT PlatformLocation[16] = {{10, 70}, {500, 100}, {100, 130}, {70, 160}, {400, 190}, {160, 220}, {60, 250}, {200, 280}, {100, 310}, {0, 340}, {160, 370}, {450, 400}, {0, 430}, {620, 460}, {0, 490}, {100, 520}};
 
     AccelerationT.Interval = 8000; //microseconds
-    GravityT.Interval = 8000; //microseconds
-    FrictionT.Interval = 5; //microseconds
-    WindowT.Interval = 8300;  //microseconds
-
+    GravityT.Interval = 8000;
+    FrictionT.Interval = 5;
+    WindowT.Interval = 8300;
     PlatformT[0].Interval = 22000;
     PlatformT[1].Interval = 20000;
     PlatformT[2].Interval = 18000;
@@ -481,7 +480,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     PlatformT[13].Interval = 17000;
     PlatformT[14].Interval = 6000;
     PlatformT[15].Interval = 15000;
-
 
     wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     wc.lpfnWndProc   = WindowProc;
@@ -508,7 +506,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     DeviceContext = GetDC(hwnd);
-    CreateBufferBitmap();
+    CreateBufferBitmap(&BitmapInfo);
     QueryPerformanceFrequency(&AccelerationT.Frequency);
     GravityT.Frequency = AccelerationT.Frequency;
     PlayerTx.Frequency = AccelerationT.Frequency;
@@ -530,7 +528,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-
+        
         DrawBackground();
         for (int i = 0; i < PLATFORMS; i++)
         {
@@ -544,7 +542,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         UpdateObjectLocation(&PlayerLocation, &PlayerV, &PlayerTx, &PlayerTy);
         LimitArea(&PlayerLocation, &PlayerV);
         DrawPlayer(&PlayerLocation, &PlayerDirection);
-        DrawWindow(hwnd, rc, &WindowT);
+        DrawWindow(hwnd, rc, &BitmapInfo, &WindowT);
     }
     return 0;
 }
