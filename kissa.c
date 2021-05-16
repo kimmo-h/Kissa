@@ -1,7 +1,3 @@
-#ifndef UNICODE
-#define UNICODE
-#endif 
-
 #include <windows.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -37,7 +33,6 @@ typedef struct QPCvars //Variables for QueryPerformanceCounter
 } QPCvars;
 
 HDC DeviceContext;
-static void *BitmapMemory;
 
 int Timer(QPCvars *Timervars)
 {
@@ -61,13 +56,8 @@ int Timer(QPCvars *Timervars)
     }
 }
 
-void CreateBufferBitmap(BITMAPINFO *BitmapInfo) //Creates buffer bitmap
+void CreateBufferBitmap(BITMAPINFO *BitmapInfo, void **BitmapMemory) //Creates buffer bitmap
 {
-    if (BitmapMemory)
-    {
-        VirtualFree(BitmapMemory, 0, MEM_RELEASE);
-    }
-
     BitmapInfo->bmiHeader.biSize = sizeof(BitmapInfo->bmiHeader);
     BitmapInfo->bmiHeader.biWidth = BITMAPW;
     BitmapInfo->bmiHeader.biHeight = BITMAPH;
@@ -76,26 +66,26 @@ void CreateBufferBitmap(BITMAPINFO *BitmapInfo) //Creates buffer bitmap
     BitmapInfo->bmiHeader.biCompression = BI_RGB;
 
     int BitmapMemorySize = BITMAPW * BITMAPH * BYTESPERPIXEL;
-    BitmapMemory = VirtualAlloc(NULL, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
+    *BitmapMemory = VirtualAlloc(NULL, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 }
 
-void DrawBackground()
+void DrawBackground(void **BitmapMemory)
 {
     int BitmapArea = BITMAPW * BITMAPH;
     int Red = 125;
     int Green = 200;
     int Blue = 255;
 
-    uint32_t *Pixel = (uint32_t *)BitmapMemory;
+    uint32_t *Pixel = (uint32_t *) *BitmapMemory;
     for (int z = 0; z < BITMAPH / 8; z++)
     {
         for (int z = 0; z < BITMAPW * 8; z++)
         {
-        *Pixel++ = (Red << 16 | Green << 8 | Blue);
+            *Pixel++ = (Red << 16 | Green << 8 | Blue);
         }
         Red--;
         Green--;
-        Blue --;
+        Blue--;
     }
 
     Pixel -= BitmapArea;
@@ -110,8 +100,8 @@ void DrawBackground()
         {
             *Pixel++ = (Red << 16 | Green << 8 | Blue);
         }
-    Red++;
-    Green++;
+        Red++;
+        Green++;
     }
 
     Red = 0;
@@ -139,13 +129,13 @@ void MovePLATFORMS(POINT *PlatformLocation, QPCvars *Timervars, int *Direction)
     }
 }
 
-void DrawPLATFORMS(POINT *PlatformLocation)
+void DrawPLATFORMS(POINT *PlatformLocation, void **BitmapMemory)
 {
     int Red = 100;
     int Green = 50;
     int Blue = 0;
 
-    uint32_t *PlatformPixel = (uint32_t *)BitmapMemory;
+    uint32_t *PlatformPixel = (uint32_t *) *BitmapMemory;
     PlatformPixel += PlatformLocation->x + PlatformLocation->y * BITMAPW;
 
     for (int z = 0; z < PLATFORMH - 2; z++)
@@ -172,13 +162,12 @@ void DrawPLATFORMS(POINT *PlatformLocation)
     }
 }
 
-void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
+void DrawPlayer(POINT *PlayerLocation, int *Direction, void **BitmapMemory) //Draws a cat
 {
     int PlayerArea = PLAYERW * PLAYERH;
     int SpriteRow;
     int SpriteColumn;
-    int RowBitmap;
-    int SpriteBitmap[16] = {0x6777, 0x7666, 0x766E, 0x3E6C, 0x3FFC, 0x3FFC, 0x3FFC, 0x7FFC, 0x600C, 0xC01E, 0x803F, 0x803F, 0xC03F, 0x603F, 0x3033, 0x0021};
+    int SpriteBitmap[16] = { 0x6777, 0x7666, 0x766E, 0x3E6C, 0x3FFC, 0x3FFC, 0x3FFC, 0x7FFC, 0x600C, 0xC01E, 0x803F, 0x803F, 0xC03F, 0x603F, 0x3033, 0x0021 };
     int FurRed = 0;
     int FurGreen = 0;
     int FurBlue = 0;
@@ -186,7 +175,7 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
     int EyeGreen = 193;
     int EyeBlue = 7;
 
-    uint32_t *FurPixel = (uint32_t *)BitmapMemory;
+    uint32_t *FurPixel = (uint32_t *) *BitmapMemory;
     FurPixel += PlayerLocation->x + PlayerLocation->y * BITMAPW;
 
     if (*Direction == 1)
@@ -207,7 +196,7 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
             FurPixel += BITMAPW - PLAYERW;
         }
 
-        uint32_t *EyePixel = (uint32_t *)BitmapMemory;
+        uint32_t *EyePixel = (uint32_t *) *BitmapMemory;
         EyePixel += PlayerLocation->x;
         EyePixel += PlayerLocation->y * BITMAPW;
         EyePixel += BITMAPW * 12 + 12;
@@ -231,10 +220,10 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
                     FurPixel++;
                 }
             }
-            FurPixel += BITMAPW-PLAYERW;
+            FurPixel += BITMAPW - PLAYERW;
         }
 
-        uint32_t *EyePixel = (uint32_t *)BitmapMemory;
+        uint32_t *EyePixel = (uint32_t *) *BitmapMemory;
         EyePixel += PlayerLocation->x;
         EyePixel += PlayerLocation->y * BITMAPW;
         EyePixel += BITMAPW * 12;
@@ -244,14 +233,14 @@ void DrawPlayer(POINT *PlayerLocation, int *Direction) //Draws a cat
     }
 }
 
-void DrawWindow(HWND hwnd, RECT rc, BITMAPINFO *BitmapInfo, QPCvars *Timervars) //Draws buffer bitmap to window
+void DrawWindow(HWND hwnd, RECT rc, BITMAPINFO *BitmapInfo, QPCvars *Timervars, void **BitmapMemory) //Draws buffer bitmap to window
 {
     if (Timer(Timervars))
     {
         GetClientRect(hwnd, &rc);
         int WindowW = rc.right - rc.left;
         int WindowH = rc.bottom - rc.top;
-        StretchDIBits(DeviceContext, rc.left, rc.top, WindowW, WindowH, 0, 0, BITMAPW, BITMAPH, BitmapMemory, BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+        StretchDIBits(DeviceContext, rc.left, rc.top, WindowW, WindowH, 0, 0, BITMAPW, BITMAPH, *BitmapMemory, BitmapInfo, DIB_RGB_COLORS, SRCCOPY);
     }
 }
 
@@ -408,10 +397,6 @@ void LimitArea(POINT *ObjectLocation, velocity *ObjectV)
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    RECT rc;
-    PAINTSTRUCT Paint;
-    char WindowInfo[32];
-
     switch (uMsg)
     {
         case WM_CLOSE:
@@ -423,12 +408,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             PostQuitMessage(0);
             break;
-        }
-        case WM_SIZE:
-        {
-            GetClientRect(hwnd, &rc);
-            sprintf(WindowInfo, "%ldx%ld", (rc.right - rc.left), (rc.bottom - rc.top));
-            SetWindowTextA(hwnd, WindowInfo);
         }
         default:
         {
@@ -444,23 +423,23 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     int Running = TRUE;
     int PawContact;
     int PlayerDirection = 1;
-    int PlatformDirection[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-    char WindowInfo[64];
-    WNDCLASS wc = {0};
-    MSG msg = {0};
-    BITMAPINFO BitmapInfo = {0};
-    QPCvars AccelerationT = {0};
-    QPCvars GravityT = {0};
-    QPCvars FrictionT = {0};
-    QPCvars PlayerTx = {0};
-    QPCvars PlayerTy = {0};
-    QPCvars PlatformT[16] = {{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
-    QPCvars WindowT = {0};
-    velocity PlayerV = {0};
-    POINT PlayerLocation = {0, 40};
-    POINT PlatformLocation[16] = {{10, 70}, {500, 100}, {100, 130}, {70, 160}, {400, 190}, {160, 220}, {60, 250}, {200, 280}, {100, 310}, {0, 340}, {160, 370}, {450, 400}, {0, 430}, {620, 460}, {0, 490}, {100, 520}};
+    int PlatformDirection[16] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    WNDCLASS wc = { 0 };
+    MSG msg = { 0 };
+    void* BitmapMemory;
+    BITMAPINFO BitmapInfo = { 0 };
+    QPCvars AccelerationT = { 0 };
+    QPCvars GravityT = { 0 };
+    QPCvars FrictionT = { 0 };
+    QPCvars PlayerTx = { 0 };
+    QPCvars PlayerTy = { 0 };
+    QPCvars PlatformT[16] = { {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0} };
+    QPCvars WindowT = { 0 };
+    velocity PlayerV = { 0 };
+    POINT PlayerLocation = { 0, 40 };
+    POINT PlatformLocation[16] = { {10, 70}, {500, 100}, {100, 130}, {70, 160}, {400, 190}, {160, 220}, {60, 250}, {200, 280}, {100, 310}, {0, 340}, {160, 370}, {450, 400}, {0, 430}, {620, 460}, {0, 490}, {100, 520} };
 
-    AccelerationT.Interval = 8000; //microseconds
+    AccelerationT.Interval = 12000; //microseconds
     GravityT.Interval = 8000;
     FrictionT.Interval = 5;
     WindowT.Interval = 8300;
@@ -482,17 +461,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     PlatformT[15].Interval = 15000;
 
     wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-    wc.lpfnWndProc   = WindowProc;
-    wc.hInstance     = hInstance;
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
     wc.lpszClassName = L"Window Class";
 
     RegisterClass(&wc);
-    RECT rc = {0, 0, 640, 360};
+    RECT rc = { 0, 0, 640, 360 };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
     HWND hwnd = CreateWindowEx(
         0,
         wc.lpszClassName,
-        L"WINDOW",
+        L"Kissapeli",
         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
         0, 0, rc.right - rc.left, rc.bottom - rc.top,
         NULL,
@@ -506,7 +485,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     DeviceContext = GetDC(hwnd);
-    CreateBufferBitmap(&BitmapInfo);
+    CreateBufferBitmap(&BitmapInfo, &BitmapMemory);
     QueryPerformanceFrequency(&AccelerationT.Frequency);
     GravityT.Frequency = AccelerationT.Frequency;
     PlayerTx.Frequency = AccelerationT.Frequency;
@@ -528,12 +507,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        
-        DrawBackground();
+
+        DrawBackground(&BitmapMemory);
         for (int i = 0; i < PLATFORMS; i++)
         {
             MovePLATFORMS(&PlatformLocation[i], &PlatformT[i], &PlatformDirection[i]);
-            DrawPLATFORMS(&PlatformLocation[i]);
+            DrawPLATFORMS(&PlatformLocation[i], &BitmapMemory);
         }
         PawContact = DetectGroundContact(PlayerLocation, PlatformLocation);
         Gravity(&GravityT, &PlayerLocation, &PlayerV, PawContact);
@@ -541,8 +520,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         Friction(&FrictionT, &PlayerLocation, &PlayerV);
         UpdateObjectLocation(&PlayerLocation, &PlayerV, &PlayerTx, &PlayerTy);
         LimitArea(&PlayerLocation, &PlayerV);
-        DrawPlayer(&PlayerLocation, &PlayerDirection);
-        DrawWindow(hwnd, rc, &BitmapInfo, &WindowT);
+        DrawPlayer(&PlayerLocation, &PlayerDirection, &BitmapMemory);
+        DrawWindow(hwnd, rc, &BitmapInfo, &WindowT, &BitmapMemory);
     }
+    VirtualFree(BitmapMemory, 0, MEM_RELEASE);
     return 0;
 }
